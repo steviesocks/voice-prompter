@@ -1,35 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid'
-import stringSimilarity from 'string-similarity'
+import { handleResults } from '../../utils/utils';
 
-import styled from 'styled-components';
-
-const StyledTeleprompter = styled.div`
-    border: 1px solid blue;
-    height: 40vh;
-    width: 60vw;
-    padding: 20px;
-    color: white;
-    white-space: pre-wrap;
-    font-size: 2.5em;
-    overflow-y: auto;
-`
-
-const Interim = styled.div`
-    color: white;
-    margin: 20px;
-    max-height: 100px;
-    width: auto;
-    max-width: 60vw;
-    background-color: rgba(0,0,0,.2);
-    border-radius: 20px;
-    font-size: .7em;
-`
-
-const cleanWord = word => {
-    console.log("word", word)
-    return word.trim().toLocaleLowerCase().replace(/[^a-z]/gi, '')
-}
+import { StyledTeleprompter, Interim } from './teleprompter.styles';
 
 const Teleprompter = ({ inputText, isListening, progress, handleProgress }) => {
 
@@ -70,35 +43,9 @@ const Teleprompter = ({ inputText, isListening, progress, handleProgress }) => {
     }, [inputText])
 
     useEffect(() => {
-        const handleResults = ({ results }) => {
-            // console.log(results)
-            const interim = Array.from(results)
-                // .filter(res => !res.isFinal)
-                .map(item => item[0].transcript)
-                .join(" ")
-
-            console.log('interim', interim)
-
-            setResults(interim)
-
-            const newIndex = interim.split(' ').reduce((acc, word) => {
-                if (acc >= script.length) {
-                    return acc;
-                }
-                const similarity = stringSimilarity.compareTwoStrings(
-                    cleanWord(word),
-                    cleanWord(script[acc])
-                )
-                acc += similarity > 0.75 ? 1 : 0;
-                return acc
-            }, progress)
-            if (newIndex > progress && newIndex <= script.length) {
-                handleProgress(newIndex)
-            }
-        }
-
+        
         speechAPI.current.onstart = () => { console.log('start') }
-        speechAPI.current.onresult = (response) => { handleResults(response) }
+        speechAPI.current.onresult = (response) => { handleResults(response, script, setResults, handleProgress, progress) }
         speechAPI.current.onerror = () => { console.log('error') }
         speechAPI.current.onend = () => { console.log('end') }
 
